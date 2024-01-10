@@ -1,0 +1,201 @@
+---
+title: "ANOVA Tooth Growth Markdown Version"
+output: html_document
+date: "2024-01-10"
+---
+
+```{r} 
+getwd()
+setwd("/Users/user/Documents/")
+getwd()
+mydataToothGrowth<-read.csv(file="ToothGrowth.csv",header=TRUE,sep=",")
+```
+
+```{r}
+dim(ToothGrowth)
+colnames(ToothGrowth)
+mean(mydataToothGrowth$len)
+sd(mydataToothGrowth$len)
+var(mydataToothGrowth$len)
+range(mydataToothGrowth$len)
+33.9-4.2 
+median(mydataToothGrowth$len)
+summary(mydataToothGrowth$len)
+```
+```{r}
+mean(mydataToothGrowth$dose)
+sd(mydataToothGrowth$dose)
+var(mydataToothGrowth$dose)
+range(mydataToothGrowth$dose)
+2.0-0.5
+median(mydataToothGrowth$dose)
+summary(mydataToothGrowth$dose)
+```
+
+```{r}
+print(mydataToothGrowth$supp)
+VC<-mydataToothGrowth[which(mydataToothGrowth$supp=='VC'),]
+print(VC$supp)
+
+OJ<-mydataToothGrowth[which(mydataToothGrowth$supp=='OJ'),]
+print(OJ$supp)
+edit(mydataToothGrowth)
+
+#should be two different treatments (orange juice and absorbic acid) using single factor designs, this is not a two way layout because a guinea pig never recieves OJ and VC, only one or the other
+
+```
+
+```{r}
+###.   ANOVA FOR ABSORBIC ACID (sup==VC). ###
+#check classes (ind is factor, dep is numeric)
+class(VC$dose)
+VC$dose<-as.factor(VC$dose)
+class(VC$dose)
+class(VC$len)
+#anova model (VC)
+VC1<-aov(len~dose,VC)
+anova(VC1)
+	#p = 3.4x10 ^-11
+#posthoc analysis and tukey test
+TukeyHSD(VC1)
+	#all p values are significant
+```
+
+```{r}
+#check assumptions
+#ABSORBIC ACID RESIDUALS
+par(mfrow=c(2,2))
+plot(VC1)
+	#residuals vs fitted has straight line at 0
+	# QQ plot shows if residuals are normally distributed (only 3 points off line)
+	#Scale-Location - line is bent 
+	# Cookds distance plot - even distribution? 
+par(mfrow=c(1,1))
+#boxplot shows if samples are indpendent and identicallt distributed
+```
+
+
+```{r}
+boxplot(len~dose,VC, col=c('blue1','blue2', 'blue3'),xlab='Dosage', ylab='Tooth Growth Length',main='Absorbic Acid Boxplot')
+	#all samples are normally distributed with the exception of one outlier in the 1 dosage group
+
+```
+
+```{r}
+hist(VC$len,main="Tooth Growth in Guinea Pigs Given Absorbic Acid",xlab='Tooth Growth Length',col=c('darkseagreen1','darkseagreen3','darkseagreen4'))
+	#roughly normal distribution, slightly bimodal with second mode at 5-10
+par(mfrow=c(1,2))
+```
+
+```{r}
+bartlett.test(len~dose,VC)
+	#p=.10, supports the null that the variances are equal
+resid.len<-resid(VC1)
+shapiro.test(resid.len)	
+	#p val = 0.6 residuals are normally distributed
+```
+
+```{r}
+#barplot
+means<-with(VC,tapply(len,dose,mean))
+means
+sd<-with(VC,tapply(len,dose,sd))
+sd
+ns<-with(VC,tapply(len,dose,length)) # n= num guinea pigs in each dosage group
+ns
+ses<-sd/sqrt(ns) #standard error
+ses
+b<-barplot(means,ylim=c(min(pretty(means+ses)),max(pretty(means+ses))),xpd=FALSE,xlab='Dosage (mg/day)',ylab='Tooth Length', main='Barplot for Absorbic Acid Guinea Pigs', symbols=c('A','A'),col='deeppink3')
+arrows(b,means+ses,b,means-ses,angle=90,code=3,col='darkslategrey')
+box(bty='l')
+```
+```{r}
+## ANOVA FOR ORANGE JUICE ## 
+class(OJ$dose)
+OJ$dose<-as.factor(OJ$dose)
+class(OJ$dose)
+class(OJ$len)
+#anova model (OJ)
+OJ1<-aov(len~dose,OJ)
+anova(OJ1)
+	#p = 1.9x10 ^-6
+#posthoc analysis and tukey test
+TukeyHSD(OJ1)
+	#p values are significant between 1-.05 and 2-.5 but not between 2-1
+```
+
+```{r}
+#check assumptions
+par(mfrow=c(2,2))
+plot(OJ1)
+	#residuals vs fitted has slightly curved line at 0
+	# QQ plot shows many points straying from line
+	#Scale-Location - line is bent down
+	# Cookds distance plot - even distribution 
+par(mfrow=c(1,1))
+
+```
+
+```{r}
+#boxplot shows if samples are indpendent and identicallt distributed
+boxplot(len~dose,OJ, col=c('blue1','blue2', 'blue3'),main='Boxplot for Orange Juice Treatment')
+	#all samples are normally distributed with no outliers 
+```
+
+```{r}
+hist(OJ$len,xlab="Length", main="Tooth Growth in Guinea Pigs given Orange Juice",col=c('darkseagreen1','darkseagreen3','darkseagreen4'))
+	#roughly normal distribution, slightly bimodal with second mode/peak  at 5-10
+par(mfrow=c(1,2))
+```
+
+```{r}
+bartlett.test(len~dose,OJ)
+	#p=.32, supports the null that the variances are equal
+resid.len<-resid(OJ1)
+shapiro.test(resid.len)	
+	#p val = 0.81 residuals are normally distributed
+#barplot
+means<-with(OJ,tapply(len,dose,mean))
+means
+sd<-with(OJ,tapply(len,dose,sd))
+sd
+ns<-with(OJ,tapply(len,dose,length)) # n= num guinea pigs in each dosage group
+ns
+ses<-sd/sqrt(ns) #standard error
+ses
+```
+```{r}
+b<-barplot(means,ylim=c(min(pretty(means-ses)),max(pretty(means+ses))),xpd=FALSE,main='Barplot for Orange Juice Treatment Guinea Pigs',xlab='Dosage (mg/day)',ylab='Tooth Length',symbols=c('A','A'),col='deeppink3')
+arrows(b,means+ses,b,means-ses,angle=90,code=3,col='darkslategrey')
+box(bty='l')
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
